@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
+//TODO: Fix collision logic for movement. Currently the child block will not check for collisiosn.
+//TODO: Rotation logic to prevent out of bounds exploits
+
+
 public class GameGrid : MonoBehaviour
 {
     public GameObject square;
@@ -10,13 +14,13 @@ public class GameGrid : MonoBehaviour
     public int cols = 5;
     private int frame = 0;
 
-    private GameObject lastSummonedBlock;
+    private GameObject firstSummonedBlock;
+    private GameObject secondSummonedBlock;
 
     void Start()
     {
         createGrid();
         summonBlock();
-
     }
 
     // Update is called once per frame
@@ -25,94 +29,164 @@ public class GameGrid : MonoBehaviour
 
         frame++;
 
-    // if (Input.GetKeyDown(KeyCode.Space)) {
-    //     summonBlock();
-    
-    // }
-    bool blockExists = lastSummonedBlock != null;
+    bool blockExists = firstSummonedBlock != null;
     if (blockExists) {
-        if (frame % 600 == 0) {
-            moveDown(lastSummonedBlock);
+        if (frame % 60000 == 0) {
+            moveDown(firstSummonedBlock);
     
         }
-        lastSummonedBlock.GetComponent<Renderer>().material.color = new Color(150f / 255f, 50f / 255f, 50f / 255f);
+        firstSummonedBlock.GetComponent<Renderer>().material.color = new Color(150f / 255f, 50f / 255f, 50f / 255f);
     }
 
 if (blockExists)
 {
     if (Input.GetKeyDown(KeyCode.DownArrow))
     {
-        moveDown(lastSummonedBlock);
+        moveDown(firstSummonedBlock);
     }
 
     if (Input.GetKeyDown(KeyCode.LeftArrow))
     {
         // Move the last summoned block to the left if X is greater than 0 and no collision
-        if (lastSummonedBlock.transform.position.x > 0)
-        {
-            Vector3 targetPosition = lastSummonedBlock.transform.position + Vector3.left;
-            if (!CheckCollision(targetPosition))
-            {
-                lastSummonedBlock.transform.position = targetPosition;
-            }
-        }
+        moveLeft();
     }
 
     if (Input.GetKeyDown(KeyCode.RightArrow))
     {
         // Move the last summoned block to the right if X is less than 4 and no collision
-        if (lastSummonedBlock.transform.position.x < 4)
-        {
-            Vector3 targetPosition = lastSummonedBlock.transform.position + Vector3.right;
-            if (!CheckCollision(targetPosition))
-            {
-                lastSummonedBlock.transform.position = targetPosition;
-            }
-        }
+        moveRight();
     }
 
     if (Input.GetKeyDown(KeyCode.Q))
     {
         // Rotate the last summoned block counterclockwise
-        lastSummonedBlock.transform.Rotate(Vector3.up, 90f);
+        firstSummonedBlock.transform.Rotate(Vector3.up, 90f);
     }
 
     if (Input.GetKeyDown(KeyCode.E))
     {
         // Rotate the last summoned block clockwise
-        lastSummonedBlock.transform.Rotate(Vector3.up, -90f);
+        firstSummonedBlock.transform.Rotate(Vector3.up, -90f);
     }
 
+
+    // only for testing, really.
     if (Input.GetKeyDown(KeyCode.UpArrow))
     {
         // Move the last summoned block up if Z is greater than 0 and no collision
-        if (lastSummonedBlock.transform.position.z > 0)
+        if (firstSummonedBlock.transform.position.z > 0)
         {
-            Vector3 targetPosition = lastSummonedBlock.transform.position + Vector3.back;
+            Vector3 targetPosition = firstSummonedBlock.transform.position + Vector3.back;
             if (!CheckCollision(targetPosition))
             {
-                lastSummonedBlock.transform.position = targetPosition;
+                firstSummonedBlock.transform.position = targetPosition;
             }
         }
     }
 }
 
-void moveDown(GameObject lastSummonedBlock) {
+// bound is 4
+void moveRight () {
+        float first = firstSummonedBlock.transform.position.x;
+        float second = secondSummonedBlock.transform.position.x;
         // Move the last summoned block down if Z is greater than 0 and no collision
-        if (lastSummonedBlock.transform.position.z < 9)
+        if (first < 4 && first > second)
         {
-            Vector3 targetPosition = lastSummonedBlock.transform.position + Vector3.forward;
+            Vector3 targetPosition = firstSummonedBlock.transform.position + Vector3.right;
             if (!CheckCollision(targetPosition))
             {
-                lastSummonedBlock.transform.position = targetPosition;
+                firstSummonedBlock.transform.position = targetPosition;
             }
-            else {
-                summonBlock();
+            return;
+        }
+        if (second < 4 && first < second) {
+            Vector3 targetPosition = secondSummonedBlock.transform.position + Vector3.right;
+            if (!CheckCollision(targetPosition))
+            {
+                targetPosition += Vector3.left;
+                firstSummonedBlock.transform.position = targetPosition;
+            }
+            return;
+        }
+        if (second < 4 && first == second) {
+            Vector3 targetPosition = firstSummonedBlock.transform.position + Vector3.right;
+            if (!CheckCollision(targetPosition))
+            {
+                firstSummonedBlock.transform.position = targetPosition;
             }
         }
-        else {
+
+        return;
+        
+}
+
+void moveLeft(){
+    int first = Mathf.RoundToInt(firstSummonedBlock.transform.position.x);
+    int second = Mathf.RoundToInt(secondSummonedBlock.transform.position.x);
+
+ 
+        // Move the last summoned block down if Z is greater than 0 and no collision
+        if (first > 0 && first <= second)
+        {
+            Vector3 targetPosition = firstSummonedBlock.transform.position + Vector3.left;
+            if (!CheckCollision(targetPosition))
+            {
+                firstSummonedBlock.transform.position = targetPosition;
+            }
+            return;
+        }
+        if (second > 0 && first >=second) {
+ 
+
+            Vector3 targetPosition = secondSummonedBlock.transform.position + Vector3.left;
+            if (!CheckCollision(targetPosition))
+            {
+                targetPosition += Vector3.right;
+                firstSummonedBlock.transform.position = targetPosition;
+            }
+            return;
+        }
+        if (second > 0  && first == second) {
+  
+            Vector3 targetPosition = secondSummonedBlock.transform.position + Vector3.left;
+            if (!CheckCollision(targetPosition))
+            {
+                firstSummonedBlock.transform.position = targetPosition;
+            }
+        }
+
+        return;
+        
+}
+
+
+void moveDown(GameObject firstSummonedBlock) {
+    float first = firstSummonedBlock.transform.position.z;
+    float second = secondSummonedBlock.transform.position.z;
+    
+    // Move the last summoned block down if Z is greater than 0 and no collision
+    if (second > first && second < 9) {
+        Vector3 targetPosition = secondSummonedBlock.transform.position + Vector3.forward;
+        if (!CheckCollision(targetPosition)) {
+            targetPosition += Vector3.back;
+            secondSummonedBlock.transform.position = targetPosition;
+        } else {
             summonBlock();
         }
+        return;
+    }
+
+    if (firstSummonedBlock.transform.position.z < 9) {
+        Vector3 targetPosition = firstSummonedBlock.transform.position + Vector3.forward;
+
+        if (!CheckCollision(targetPosition)) {
+            firstSummonedBlock.transform.position = targetPosition;
+        } else {
+            summonBlock();
+        }
+    } else {
+        summonBlock();
+    }
 }
 
 bool CheckCollision(Vector3 targetPosition)
@@ -147,13 +221,18 @@ bool CheckCollision(Vector3 targetPosition)
 
     void summonBlock() {
 
+        if (secondSummonedBlock != null) {
+            secondSummonedBlock.transform.parent = transform;
+        }
+
 
         Vector3 position = new Vector3(2, 1.5f, -2);
 
         GameObject block = Instantiate(square, position, Quaternion.Euler(0f, 0f, 0f));
+        position += Vector3.right;
+        GameObject block2 = Instantiate(square, position, Quaternion.Euler(0f, 0f, 0f));
         block.tag = "Player";
-    
-
+        block2.tag = "Player";
 
         string[] suits = { "♠️", "♥️", "♣️", "♦️" };
         string[] numbers = { "A", "2", "3", "4", "5", "6", "7", "8", "9", "10"};
@@ -161,17 +240,21 @@ bool CheckCollision(Vector3 targetPosition)
         // Generate random indices for suit and number
         int randomSuitIndex = UnityEngine.Random.Range(0, suits.Length);
         int randomNumberIndex = UnityEngine.Random.Range(0, numbers.Length);
-
         // Set the suit and number of the block
         block.GetComponent<CubeScript>().suit = suits[randomSuitIndex];
         block.GetComponent<CubeScript>().value = numbers[randomNumberIndex];
 
+        randomSuitIndex = UnityEngine.Random.Range(0, suits.Length);
+        randomNumberIndex = UnityEngine.Random.Range(0, numbers.Length);
+        block2.GetComponent<CubeScript>().suit = suits[randomSuitIndex];
+        block2.GetComponent<CubeScript>().value = numbers[randomNumberIndex];
 
         // Set parent 
         block.transform.parent = transform;
+        block2.transform.parent = block.transform;
 
-
-        lastSummonedBlock = block;
+        firstSummonedBlock = block;
+        secondSummonedBlock = block2;
 
     }
 
@@ -190,9 +273,14 @@ bool CheckCollision(Vector3 targetPosition)
                 return false; 
             }
         }
+
+            if (secondSummonedBlock != null) {
+            secondSummonedBlock.transform.parent = transform;
+        }
     // delete if full line
     for (int x = 0; x < 5; x++)
     {   
+
         Vector3 pos = new Vector3(x, 1.5f, z);
         Collider[] colliders = Physics.OverlapSphere(pos, 0.1f);
         foreach (Collider collider in colliders)
