@@ -17,22 +17,34 @@ public class GameGrid : MonoBehaviour
     private GameObject firstSummonedBlock;
     private GameObject secondSummonedBlock;
 
+    public AudioSource source;
+    public AudioClip click;
+    public AudioClip rift;
+
+    public int points = 0;
+
+
     void Start()
     {
+        AudioSource[] audioSources = GetComponents<AudioSource>();
+        source = audioSources[0];
+        click = audioSources[0].clip;
+        rift = audioSources[1].clip;
         createGrid();
         summonBlock();
+
     }
 
     // Update is called once per frame
     void Update()
     {
-
         frame++;
 
     bool blockExists = firstSummonedBlock != null;
     if (blockExists) {
-        if (frame % 60000 == 0) {
+        if (frame % 6000 == 0) {
             moveDown(firstSummonedBlock);
+             playOne();
     
         }
         firstSummonedBlock.GetComponent<Renderer>().material.color = new Color(150f / 255f, 50f / 255f, 50f / 255f);
@@ -40,39 +52,46 @@ public class GameGrid : MonoBehaviour
 
 if (blockExists)
 {
+
     if (Input.GetKeyDown(KeyCode.DownArrow))
     {
-        moveDown(firstSummonedBlock);
+        moveDown(firstSummonedBlock);   
+        playOne();
     }
 
     if (Input.GetKeyDown(KeyCode.LeftArrow))
     {
         // Move the last summoned block to the left if X is greater than 0 and no collision
         moveLeft();
+        playOne();
     }
 
     if (Input.GetKeyDown(KeyCode.RightArrow))
     {
         // Move the last summoned block to the right if X is less than 4 and no collision
         moveRight();
+        playOne();
     }
 
     if (Input.GetKeyDown(KeyCode.Q))
     {
         // Rotate the last summoned block counterclockwise
         firstSummonedBlock.transform.Rotate(Vector3.up, 90f);
+        playOne();
     }
 
     if (Input.GetKeyDown(KeyCode.E))
     {
         // Rotate the last summoned block clockwise
         firstSummonedBlock.transform.Rotate(Vector3.up, -90f);
+        playOne();
     }
 
 
     // only for testing, really.
     if (Input.GetKeyDown(KeyCode.UpArrow))
     {
+        playOne();
         // Move the last summoned block up if Z is greater than 0 and no collision
         if (firstSummonedBlock.transform.position.z > 0)
         {
@@ -82,6 +101,8 @@ if (blockExists)
                 firstSummonedBlock.transform.position = targetPosition;
             }
         }
+        Debug.Log(points);
+        frame = 0;
     }
 }
 
@@ -119,6 +140,7 @@ void moveRight () {
         return;
         
 }
+
 
 void moveLeft(){
     int first = Mathf.RoundToInt(firstSummonedBlock.transform.position.x);
@@ -161,33 +183,59 @@ void moveLeft(){
 
 
 void moveDown(GameObject firstSummonedBlock) {
-    float first = firstSummonedBlock.transform.position.z;
-    float second = secondSummonedBlock.transform.position.z;
-    
-    // Move the last summoned block down if Z is greater than 0 and no collision
-    if (second > first && second < 9) {
-        Vector3 targetPosition = secondSummonedBlock.transform.position + Vector3.forward;
-        if (!CheckCollision(targetPosition)) {
-            targetPosition += Vector3.back;
-            secondSummonedBlock.transform.position = targetPosition;
-        } else {
-            summonBlock();
-        }
-        return;
+int first = (int)firstSummonedBlock.transform.position.z;
+int second = (int)secondSummonedBlock.transform.position.z;
+
+// Move the last summoned block down if Z is greater than 0 and no collision
+
+if (second == first && second < 9) {
+    Vector3 targetPosition = firstSummonedBlock.transform.position + Vector3.forward;
+    Vector3 secondPosition = secondSummonedBlock.transform.position + Vector3.forward;
+
+
+    if (!CheckCollision(targetPosition) && !CheckCollision(secondPosition))
+    {   
+        firstSummonedBlock.transform.position = targetPosition;
     }
+    else
+    {
+        summonBlock();
+    }
+    return;
+}
 
-    if (firstSummonedBlock.transform.position.z < 9) {
-        Vector3 targetPosition = firstSummonedBlock.transform.position + Vector3.forward;
-
-        if (!CheckCollision(targetPosition)) {
-            firstSummonedBlock.transform.position = targetPosition;
-        } else {
-            summonBlock();
-        }
-    } else {
+if (second > first && second < 9)
+{
+    Vector3 targetPosition = secondSummonedBlock.transform.position + Vector3.forward;
+    if (!CheckCollision(targetPosition))
+    {   
+        targetPosition += Vector3.back;
+        firstSummonedBlock.transform.position = targetPosition;
+    }
+    else
+    {
         summonBlock();
     }
 }
+else if (firstSummonedBlock.transform.position.z < 9)
+{
+    Vector3 targetPosition = firstSummonedBlock.transform.position + Vector3.forward;
+
+    if (!CheckCollision(targetPosition))
+    {
+        firstSummonedBlock.transform.position = targetPosition;
+    }
+    else
+    {
+        summonBlock();
+    }
+}
+else
+{
+    summonBlock();
+}
+}
+
 
 bool CheckCollision(Vector3 targetPosition)
 {
@@ -196,7 +244,6 @@ bool CheckCollision(Vector3 targetPosition)
 }
 
     for (int z = 0; z < 10; z++) {
-        // Debug.Log(isCompleteLine(z));
         isCompleteLine(z);
     }
 
@@ -276,8 +323,9 @@ bool CheckCollision(Vector3 targetPosition)
 
             if (secondSummonedBlock != null) {
             secondSummonedBlock.transform.parent = transform;
-        }
+    }
     // delete if full line
+    playTwo();
     for (int x = 0; x < 5; x++)
     {   
 
@@ -288,12 +336,77 @@ bool CheckCollision(Vector3 targetPosition)
             string suit = collider.gameObject.GetComponent<CubeScript>().suit;
             string value = collider.gameObject.GetComponent<CubeScript>().value;
 
-            Debug.Log("Destroyed Object - Suit: " + suit + ", Value: " + value);
+        
+
+            // "♠️", "♥️", "♣️", "♦️"
+            //"A", "2", "3", "4", "5", "6", "7", "8", "9", "10"
+            int multipler = 1;
+            switch (suit) {
+                case "♠️":
+                    multipler = 8;
+                    break;
+                case "♥️":
+                    multipler = 4;
+                    break;
+                case "♣️":
+                    multipler = 2;
+                    break;
+                case "♦️":
+                    multipler = 1;
+                    break;     
+                default:
+                    multipler = 1;
+                    Debug.Log("Broken!");
+                    break;              
+            } 
+
+        int v = 0;
+
+        switch (value)
+        {
+            case "A":
+                v = 11;
+                break;
+            case "2":
+                v = 2;
+                break;
+            case "3":
+                 v = 3;
+                 break;
+            case "4":
+                v = 4;
+                break;
+            case "5":
+                v = 5;
+                break;
+            case "6":
+                v = 6;
+                break;
+            case "7":
+                v = 7;
+                break;
+            case "8":
+                v = 8;
+                break;
+            case "9":
+                v = 9;
+                break;
+            case "10":
+                v = 10;
+                break;
+            default:
+                throw new ArgumentException("Invalid value");
+        }
+
+
+            points += v * multipler;
+
             Destroy(collider.gameObject);
         }
 
     }
         onClear(z);
+        Debug.Log(points);
         return true;
 
     }   
@@ -310,4 +423,14 @@ void onClear(int row)
     }
     summonBlock();
 }
+
+
+void playOne() {
+    source.PlayOneShot(click);
+}
+
+void playTwo() {
+    source.PlayOneShot(rift);
+}
+
 }
